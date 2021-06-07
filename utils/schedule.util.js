@@ -60,8 +60,8 @@ const dayScheduler = (hour,prev,callback)=> {
                     endTime = moment().format('YYYY-MM-DD 23:59:59')
                 }
                 callback(startTime,endTime)
-            },oneDayTime/(24 * 60))
-        }, firstTime/(24 * 60));
+            },oneDayTime)
+        }, firstTime);
     }
 }
 

@@ -1,5 +1,6 @@
 const { dbQuery } = require("../utils/db.util")
 const { sendMail, getEmailContent} = require('../utils/mail.util')
+const moment = require('dayjs')
 
 module.exports = async (users,startTime,endTime) => {
     const emailSql =  `
@@ -13,37 +14,49 @@ module.exports = async (users,startTime,endTime) => {
         realname in ('${users.join("','")}')`
     
     let emails = await dbQuery(emailSql)
+    const today = moment().format('YYYY-MM-DD')
 
     const taskSql = `
-        SELECT
-            p.name project_name,
-            t.project,
-            u.account,
-            u.realname,
-            t.id task_id,
-            t.name task_name,
-            t.type task_type,
-            t.pri task_pri,
-            t.consumed task_consumed,
-            te.consumed calc_consumed,
-            t.realStarted,
-            t.estimate 
-        FROM
-            zt_user u,
-            zt_task t,
-            zt_taskestimate te,
-            zt_project p 
-        WHERE
-            u.realname in ('${users.join("','")}') 
-            AND u.account = t.lastEditedBy 
-            AND te.task = t.id 
-            AND p.id = t.project 
-            AND t.lastEditedDate > '${startTime }' 
-            AND te.date >= '${startTime}' 
-            AND te.date < '${endTime}' AND te.consumed > 0
+    SELECT
+        t.id task_id,
+        p.NAME project_name,
+        t.deadline < '${today}'  as over,
+        t.status,
+        t.project,
+        t.deadline,
+        u.account,
+        u.realname,
+        t.NAME task_name,
+        t.type task_type,
+        t.pri task_pri,
+        t.consumed task_consumed,
+        te.consumed calc_consumed,
+        t.realStarted,
+        t.estimate 
+    FROM
+        zt_task t
+        LEFT JOIN zt_taskestimate te ON t.id = te.task
+        LEFT JOIN zt_user u ON t.assignedTo = u.account
+        LEFT JOIN zt_project p ON t.project = p.id 
+    WHERE
+        u.realname IN ( '${users.join("','")}' )
+            AND (
+            ( 
+            u.account = t.lastEditedBy 
+                AND te.task = t.id 
+                AND t.lastEditedDate > '${startTime}' 
+                AND te.date >= '${startTime}' 
+                AND te.date < '${endTime}' 
+                AND te.consumed > 0 
+            ) 
+            OR (
+                t.deadline <  '${today}'
+                AND t.deadline != '0000-00-00' 
+                AND t.STATUS NOT IN ( 'done', 'cancel', 'closed' )
+            ) 
+        ) 
         ORDER BY t.project
         `
-        console.log(taskSql,'taskSql')
         const tasks = await  dbQuery(taskSql) 
         const bugSql = `
         SELECT
@@ -71,7 +84,6 @@ module.exports = async (users,startTime,endTime) => {
             AND b.resolvedDate < '${endTime}'
         ORDER BY b.project
         `	
-        console.log(bugSql,'bugSql')
         const bugs = await dbQuery(bugSql)
         const usersList = emails.map(item=> ({
             realname: item.realname,

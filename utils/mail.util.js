@@ -4,7 +4,6 @@ const  moment = require( 'dayjs')
 
 
 const sendMail = (content,users) => {
-
     const transporter  =  nodemailer.createTransport({
         service: config.email.service,
         host:config.email.host,
@@ -18,7 +17,7 @@ const sendMail = (content,users) => {
 
     transporter.sendMail({
         from: config.email.username,
-        to: 'jiangmingwen@huanbo99.com',//users.toString(),
+        to: users.toString(),
         subject: 'Zentao Daily「' + moment().format('YYYY-MM-DD')+'」',
         html: content
     },(error,info)=> {
@@ -74,12 +73,13 @@ function getTaskItemContent(index,taskInfo){
     <div style="flex: 1;padding-right: 16px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;" title="${taskInfo.task_name}">
         <a href="${config.zentaoHome}/task-view-${taskInfo.task_id}.html">${taskInfo.task_name}</a>
     </div>
-    <div style="flex: 0 0 60px">${taskInfo.calc_consumed}</div>
+    <div style="flex: 0 0 60px">${taskInfo.calc_consumed||0 }</div>
+    <div style="flex: 0 0 100px;color:${taskInfo.status !== 'done' && taskInfo.over?'red':''}">${taskInfo.deadline==='0000-00-00'?'无':moment(taskInfo.deadline).format('YYYY-MM-DD')}</div>
     <div style="flex: 0 0 80px">${taskInfo.task_pri}</div>
     <div style="flex: 0 0 80px">${taskInfo.task_consumed}</div>
     <div style="flex: 0 0 80px">${taskInfo.estimate}</div>
     <div style="flex: 0 0 50px">${types[taskInfo.task_type] || ''}</div>
-    <div style="flex: 0 0 100px">${moment(taskInfo.realStarted).format('YYYY-MM-DD')}</div>
+    <div style="flex: 0 0 100px">${taskInfo.realStarted !== '00-00-00 00:00:00'?moment(taskInfo.realStarted).format('YYYY-MM-DD'):'未开始'}</div>
     <div style="flex: 0 0 150px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;" title="${taskInfo.project_name}">${taskInfo.project_name}</div>
 </div>`
 return template
@@ -111,6 +111,7 @@ const taskHeader = `
     <div style="flex: 0 0 50px">编号</div>
     <div style="flex: 1;padding-right: 16px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;">任务名称</div>
     <div style="flex: 0 0 60px">工时</div>
+    <div style="flex: 0 0 100px">截止时间</div>
     <div style="flex: 0 0 80px">优先级</div>
     <div style="flex: 0 0 80px">总耗时</div>
     <div style="flex: 0 0 80px">预计</div>

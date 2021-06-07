@@ -1,8 +1,8 @@
 module.exports = {
     zentaoHome:  'http://192.168.16.92:8888/zentao',
     email: {
-        username: 'dev@huanbo99.com',
-        password: 'yfb123456',
+        username: 'your.email',
+        password: 'your.password',
         service: 'smtp.ym.163.com',
         host: 'smtp.ym.163.com',
         port: 25,
