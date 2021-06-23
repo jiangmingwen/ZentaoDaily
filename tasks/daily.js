@@ -42,21 +42,25 @@ module.exports = async (users,startTime,endTime) => {
         u.realname IN ( '${users.join("','")}' )
             AND (
             ( 
-            u.account = t.lastEditedBy 
+                u.account = t.lastEditedBy 
                 AND te.task = t.id 
                 AND t.lastEditedDate > '${startTime}' 
                 AND te.date >= '${startTime}' 
                 AND te.date < '${endTime}' 
                 AND te.consumed > 0 
+                AND t.deleted = '0'
             ) 
             OR (
+                
                 t.deadline <  '${today}'
+                AND t.deleted = '0'
                 AND t.deadline != '0000-00-00' 
                 AND t.STATUS NOT IN ( 'done', 'cancel', 'closed' )
             ) 
         ) 
         ORDER BY t.project
         `
+        console.log(taskSql)
         const tasks = await  dbQuery(taskSql) 
         const bugSql = `
         SELECT
@@ -78,12 +82,15 @@ module.exports = async (users,startTime,endTime) => {
             zt_project p 
         WHERE
             u.realname in ('${users.join("','")}') 
+            AND b.deleted = '0'
             AND b.resolvedBy = u.account 
             AND b.project = p.id 
             AND b.resolvedDate >= '${startTime}' 
             AND b.resolvedDate < '${endTime}'
         ORDER BY b.project
         `	
+
+        console.log(bugSql,'bugSql')
         const bugs = await dbQuery(bugSql)
         const usersList = emails.map(item=> ({
             realname: item.realname,
@@ -103,6 +110,7 @@ module.exports = async (users,startTime,endTime) => {
 
     
         emails = emails?.map(item => item.email)?.filter(item => !!item)
+
         if(emails?.length){
             const content = getEmailContent(usersList)
             sendMail(content,emails)

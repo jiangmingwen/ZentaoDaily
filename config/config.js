@@ -1,8 +1,8 @@
 module.exports = {
     zentaoHome:  'http://192.168.16.92:8888/zentao',
     email: {
-        username: 'your.email',
-        password: 'your.password',
+        username: 'dev@huanbo99.com',
+        password: 'yfb123456',
         service: 'smtp.ym.163.com',
         host: 'smtp.ym.163.com',
         port: 25,
@@ -16,9 +16,11 @@ module.exports = {
         database: 'zentao',
         type: 'mysql'
     },
+
     daily: {
         active: true,
-        users: ['姜明文','肖礼文','廖薇','孟成华','王坤'],
+        users: ['姜明文','肖礼文','廖薇','孟成华','王坤'], 
+		redirectEmails: [],
         hour: 9,
         prev: true
     }

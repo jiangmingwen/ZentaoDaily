@@ -14,10 +14,11 @@ const sendMail = (content,users) => {
             pass: config.email.password || ''
         }
     })
-
+    //不统计的人也想接收邮件
+    const to = [...config.daily.redirectEmails,users].join(',')
     transporter.sendMail({
         from: config.email.username,
-        to: users.toString(),
+        to,
         subject: 'Zentao Daily「' + moment().format('YYYY-MM-DD')+'」',
         html: content
     },(error,info)=> {
@@ -48,7 +49,7 @@ function getBugItemContent(index,bugInfo){
     <div style="flex: 0 0 80px">${bugInfo.activatedCount}</div>
     <div style="flex: 0 0 80px">${bugInfo.resolvedBuild == 'trunk'?'主干':bugInfo.resolvedBuild}</div>
     <div style="flex: 0 0 70px">${statusMap[bugInfo.status]||''}</div>
-    <div style="flex: 0 0 100px">${moment(bugInfo.closedDate).format('YYYY-MM-DD')}</div>
+    <div style="flex: 0 0 100px">${bugInfo.closedDate !== '0000-00-00 00:00:00' ?moment(bugInfo.closedDate).format('YYYY-MM-DD'):'无'}</div>
     <div style="flex: 0 0 150px";overflow: hidden;white-space: nowrap;text-overflow: ellipsis;" title="${bugInfo.project_name}">${bugInfo.project_name}</div>
 </div>`
 return template
@@ -99,7 +100,8 @@ function getEmailContent(list){
         bugs.forEach((bugItem,index) => {
             bugTexts+= getBugItemContent(index,bugItem)
         })
-        content += getDailyUserContent(item.realname,taskTexts,bugTexts,tasks.length,bugs.length)
+        const count = tasks.filter(item => !item.over).length
+        content += getDailyUserContent(item.realname,taskTexts,bugTexts,tasks.length,bugs.length,count)
     })
     return content
 }
@@ -140,13 +142,13 @@ const emptyContent = `
 </div>
 `
 
-function getDailyUserContent(user,taskContent,bugContent,taskCount,bugCount){
+function getDailyUserContent(user,taskContent,bugContent,taskCount,bugCount,doneTaskCount){
     const emailTemplate = ` <div style="width: 1024px; margin: 32px 0;border: 1px solid #d8d8d8;">
     <div style="text-align: center;font-size: 18px;font-weight:bold;color:#fff;background-color: #767E95; padding: 8px 12px; " >${user}</div>
     <div style="display: flex;">
         <div style="flex: 0 0 80px;border-right: 1px solid #d8d8d8;padding: 8px 12px;
          display: flex;align-items: center;justify-content: center;
-        ">任务(${taskCount})</div>
+        ">任务(${doneTaskCount})</div>
         <div style="padding: 8px 12px;flex: 1">
             ${taskCount>0? taskHeader: emptyContent} 
             ${taskContent}

@@ -14,6 +14,7 @@ const config = require('./config/config');
 var app = express();
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+var zentaoRouter = require('./routes/zentao');
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -24,6 +25,8 @@ app.set('view engine', 'jade');
 dayScheduler(config.daily.hour,config.daily.prev,(s,e)=> {
   dailyTask(config.daily.users,s,e)
 })
+
+
 
 
 //设置日志文件目录
@@ -47,6 +50,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/zentao', zentaoRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
