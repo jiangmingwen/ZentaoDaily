@@ -80,7 +80,7 @@ function getTaskItemContent(index,taskInfo){
     <div style="flex: 0 0 80px">${taskInfo.task_consumed}</div>
     <div style="flex: 0 0 80px">${taskInfo.estimate}</div>
     <div style="flex: 0 0 50px">${types[taskInfo.task_type] || ''}</div>
-    <div style="flex: 0 0 100px">${taskInfo.realStarted !== '00-00-00 00:00:00'?moment(taskInfo.realStarted).format('YYYY-MM-DD'):'未开始'}</div>
+    <div style="flex: 0 0 100px">${taskInfo.realStarted !== '0000-00-00 00:00:00'?moment(taskInfo.realStarted).format('YYYY-MM-DD'):'未开始'}</div>
     <div style="flex: 0 0 150px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;" title="${taskInfo.project_name}">${taskInfo.project_name}</div>
 </div>`
 return template
