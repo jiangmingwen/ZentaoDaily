@@ -14,11 +14,10 @@ const sendMail = (content,users) => {
             pass: config.email.password || ''
         }
     })
-    //不统计的人也想接收邮件
-    const to = [...config.daily.redirectEmails,users].join(',')
+
     transporter.sendMail({
         from: config.email.username,
-        to,
+        to: 'jiangmingwen@huanbo99.com',//users.join(','),
         subject: 'Zentao Daily「' + moment().format('YYYY-MM-DD')+'」',
         html: content
     },(error,info)=> {
@@ -50,7 +49,9 @@ function getBugItemContent(index,bugInfo){
     <div style="flex: 0 0 80px">${bugInfo.resolvedBuild == 'trunk'?'主干':bugInfo.resolvedBuild}</div>
     <div style="flex: 0 0 70px">${statusMap[bugInfo.status]||''}</div>
     <div style="flex: 0 0 100px">${bugInfo.closedDate !== '0000-00-00 00:00:00' ?moment(bugInfo.closedDate).format('YYYY-MM-DD'):'无'}</div>
-    <div style="flex: 0 0 150px";overflow: hidden;white-space: nowrap;text-overflow: ellipsis;" title="${bugInfo.project_name}">${bugInfo.project_name}</div>
+    <div style="flex: 0 0 150px";overflow: hidden;white-space: nowrap;text-overflow: ellipsis;" title="${bugInfo.project_name}">
+        <a href="${config.zentaoHome}/project-view-${bugInfo.project_id}.html" target="_blank">${bugInfo.project_name}</a>
+    </div>
 </div>`
 return template
 }
@@ -81,7 +82,9 @@ function getTaskItemContent(index,taskInfo){
     <div style="flex: 0 0 80px">${taskInfo.estimate}</div>
     <div style="flex: 0 0 50px">${types[taskInfo.task_type] || ''}</div>
     <div style="flex: 0 0 100px">${taskInfo.realStarted !== '0000-00-00 00:00:00'?moment(taskInfo.realStarted).format('YYYY-MM-DD'):'未开始'}</div>
-    <div style="flex: 0 0 150px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;" title="${taskInfo.project_name}">${taskInfo.project_name}</div>
+    <div style="flex: 0 0 150px;overflow: hidden;white-space: nowrap;text-overflow: ellipsis;" title="${taskInfo.project_name}">
+        <a href="${config.zentaoHome}/project-view-${taskInfo.project_id}.html" target="_blank">${taskInfo.project_name}</a>
+    </div>
 </div>`
 return template
 }
@@ -146,19 +149,19 @@ function getDailyUserContent(user,taskContent,bugContent,taskCount,bugCount,done
     const emailTemplate = ` <div style="width: 1024px; margin: 32px 0;border: 1px solid #d8d8d8;">
     <div style="text-align: center;font-size: 18px;font-weight:bold;color:#fff;background-color: #767E95; padding: 8px 12px; " >${user}</div>
     <div style="display: flex;">
-        <div style="flex: 0 0 80px;border-right: 1px solid #d8d8d8;padding: 8px 12px;
+        <div style="flex: 0 0 80px;box-sizing: border-box;border-right: 1px solid #d8d8d8;padding: 8px 12px;
          display: flex;align-items: center;justify-content: center;
         ">任务(${doneTaskCount})</div>
-        <div style="padding: 8px 12px;flex: 1">
+        <div style="padding: 8px 12px;width: 944px;box-sizing: border-box;">
             ${taskCount>0? taskHeader: emptyContent} 
             ${taskContent}
         </div>
     </div>
     <div style="display: flex;border-top: 1px solid #d8d8d8;">
-         <div style="flex: 0 0 80px;border-right: 1px solid #d8d8d8;padding: 8px 12px;
+         <div style="flex: 0 0 80px;box-sizing: border-box;border-right: 1px solid #d8d8d8;padding: 8px 12px;
          display: flex;align-items: center;justify-content: center;
         ">bug(${bugCount})</div>
-        <div style="padding: 8px 12px;flex: 1">
+        <div style="padding: 8px 12px;width: 944px;box-sizing: border-box;">
             ${bugCount>0? bugHeader: emptyContent} 
             ${bugContent}
         </div>

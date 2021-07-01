@@ -1,6 +1,7 @@
 const { dbQuery } = require("../utils/db.util")
 const { sendMail, getEmailContent} = require('../utils/mail.util')
 const moment = require('dayjs')
+const config = require('../config/config')
 
 module.exports = async (users,startTime,endTime) => {
     const emailSql =  `
@@ -20,6 +21,7 @@ module.exports = async (users,startTime,endTime) => {
     SELECT
         t.id task_id,
         p.NAME project_name,
+        p.id project_id,
         t.deadline < '${today}'  as over,
         t.status,
         t.project,
@@ -60,7 +62,6 @@ module.exports = async (users,startTime,endTime) => {
         ) 
         ORDER BY t.project
         `
-        console.log(taskSql)
         const tasks = await  dbQuery(taskSql) 
         const bugSql = `
         SELECT
@@ -74,6 +75,7 @@ module.exports = async (users,startTime,endTime) => {
             b.resolvedBuild,
             b.closedDate,
             p.name project_name,
+            p.id project_id,
             u.account,
             u.realname 
         FROM
@@ -90,14 +92,17 @@ module.exports = async (users,startTime,endTime) => {
         ORDER BY b.project
         `	
 
-        console.log(bugSql,'bugSql')
+
         const bugs = await dbQuery(bugSql)
         const usersList = emails.map(item=> ({
             realname: item.realname,
             account: item.account,
+            // email: item.email,
+            // members: config.daily.leaders[realname],
             task: [],
             bug: []
         }))
+
         tasks.forEach(resItem=> {
             let  existItem = usersList.find(p => p.realname === resItem.realname)
             existItem.task.push(resItem)
@@ -108,11 +113,41 @@ module.exports = async (users,startTime,endTime) => {
             existItem.bug.push(resItem)
         })
 
-    
-        emails = emails?.map(item => item.email)?.filter(item => !!item)
-
-        if(emails?.length){
+        const adminUsers = config.daily.redirectEmails
+        //如果配置了分组接受
+        if(config.daily.hasOwnProperty('leaders')) {
+            if(adminUsers.length){
+                const content = getEmailContent(usersList)
+                sendMail(content,adminUsers)
+            }
+            emails.forEach(emailItem=> {
+                const realname = emailItem.realname
+                const leaders = config.daily.leaders[realname] || []
+                
+                if(leaders && leaders.length) {
+                    //发送组长和组员的邮件
+                    const list = []
+                    usersList.forEach(p => {
+                        if(p.realname === realname || leaders.includes(p.realname ) ){
+                            list.push(p)
+                        }
+                    })
+                    if(list.length){
+                        let content = getEmailContent(list)
+                        sendMail(content,[emailItem.email])
+                    }
+                }else {
+                    //发送单个人的邮件
+                    const selfContent = usersList.find( p => realname === p.realname)
+                    let content = getEmailContent([selfContent])
+                    sendMail(content,[emailItem.email])
+                }
+            })
+        }else {
+            //如果没有配置分组接受
+            //则每个人都接受所有人的，这里就是公开-透明的模式
+            emails = emails?.map(item => item.email)?.filter(item => !!item)
             const content = getEmailContent(usersList)
-            sendMail(content,emails)
+            sendMail(content,[...adminUsers,...emails])
         }
 }
