@@ -10,8 +10,8 @@ const getConnection = () => {
         port: config.db.port || '3306',
         user: config.db.user || 'root',
         password: config.db.password || '',
-        database: config.db.database || 'zentao'
-        
+        database: config.db.database || 'zentao',
+        timezone: '00:00'
     })
 }
 

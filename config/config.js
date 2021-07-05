@@ -15,7 +15,7 @@ module.exports = {
         host: '192.168.16.92',
         port: '3306',
         database: 'zentao',
-        type: 'mysql'
+        type: 'mysql',
     },
     daily: {
         active: true,
