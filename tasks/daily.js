@@ -15,56 +15,80 @@ module.exports = async (users,startTime,endTime) => {
         realname in ('${users.join("','")}')`
     
     let emails = await dbQuery(emailSql)
-    const today = moment().format('YYYY-MM-DD')
 
     const taskSql = `
-    SELECT
-        t.id task_id,
-        p.NAME project_name,
-        p.id project_id,
-        t.deadline < '${today}'  as over,
-        t.status,
-        t.project,
-        t.deadline,
-        u.account,
-        u.realname,
-        t.NAME task_name,
-        t.type task_type,
-        t.pri task_pri,
-        t.consumed task_consumed,
-        te.consumed calc_consumed,
-        t.realStarted,
-        t.estimate 
-    FROM
-        zt_task t
-        LEFT JOIN zt_taskestimate te ON t.id = te.task
-        LEFT JOIN zt_user u ON t.assignedTo = u.account
-        LEFT JOIN zt_project p ON t.project = p.id 
-    WHERE
-        u.realname IN ( '${users.join("','")}' )
-            AND (
-            ( 
-                u.account = t.lastEditedBy 
-                AND te.task = t.id 
-                AND t.lastEditedDate > '${startTime}' 
-                AND te.date >= '${startTime}' 
-                AND te.date < '${endTime}' 
-                AND te.consumed > 0 
-                AND t.deleted = '0'
-            ) 
-            OR (
-                
-                t.deadline <  '${today}'
-                AND t.deleted = '0'
-                AND t.deadline != '0000-00-00' 
-                AND t.STATUS NOT IN ( 'done', 'cancel', 'closed' )
-            ) 
-        ) 
-        ORDER BY t.project
+        SELECT
+            DATEDIFF(te.date,t.deadline) diff_day,
+            t.name task_name,
+            t.id task_id,
+            t.STATUS,
+            t.deadline,
+            t.consumed task_consumed,
+            t.type task_type,
+            t.pri task_pri,
+            t.realStarted,
+            t.finishedDate,
+            t.estimate,
+            p.id project_id,
+            p.name project_name,
+            te.*,
+            u.realname 
+        FROM
+            zt_taskestimate te
+            LEFT JOIN zt_task t ON t.id = te.task
+            LEFT JOIN zt_user u ON te.account = u.account
+            LEFT JOIN zt_project p ON t.project = p.id 
+        WHERE
+            u.realname IN ('${users.join("','")}') 
+            AND te.date >= '${startTime}' 
+            AND te.date < '${endTime}' 
+            AND t.deleted = '0' 
+        ORDER BY
+            t.project
         `
         const tasks = await  dbQuery(taskSql) 
+        //今日时间
+        let todoTime = moment().format('YYYY-MM-DD')
+        if(!config.daily.prev) { 
+            //日报是统计今天的，将要做的任务是统计明天的
+            todoTime = moment( new Date(todoTime).getTime() + 24 * 60 * 60 * 1000).format('YYYY-MM-DD')
+        }
+        const todoTaskSql = `
+            SELECT 
+                DATEDIFF(NOW(),t.deadline) diff_day,
+                t.name task_name,
+                t.id task_id,
+                t.STATUS,
+                t.deadline,
+                t.consumed task_consumed,
+                t.type task_type,
+                t.pri task_pri,
+                t.realStarted,
+                t.finishedDate,
+                t.estimate,
+                p.id project_id,
+                p.name project_name,
+                u.realname
+            from
+                zt_task t 
+                LEFT JOIN zt_user u ON t.assignedTo = u.account
+                LEFT JOIN zt_project p ON t.project = p.id 
+            WHERE 
+                t.deleted = '0'
+                AND  u.realname IN ('${users.join("','")}') 
+                AND  t.deadline <= '${todoTime}'
+                AND  t.deadline > '0000-00-00'
+                AND  t.status IN ('wait','doing','pause')
+            ORDER BY
+	            t.deadline ASC
+        `
+        //截止时间是今天的任务
+        const todoTask = await  dbQuery(todoTaskSql) 
+
+
         const bugSql = `
         SELECT
+            DATEDIFF(b.resolvedDate,b.deadline) diff_day,
             b.id,
             b.title,
             b.severity,
@@ -94,23 +118,58 @@ module.exports = async (users,startTime,endTime) => {
 
 
         const bugs = await dbQuery(bugSql)
+
+        const todoBugSql = `
+        SELECT 
+            t.* ,
+            u.realname,
+            u.account,
+            p.id project_id,
+            p.name project_name,
+            DATEDIFF(NOW(),t.deadline)  diff_day
+        FROM 
+            zt_bug t 
+            LEFT JOIN zt_user u ON t.assignedTo = u.account
+            LEFT JOIN zt_project p ON t.project = p.id 
+        WHERE 
+            t.deleted = '0'
+            AND t.deadline <= '${todoTime}'
+            AND t.deadline > '0000-00-00'
+            AND t.status = 'active'
+        ORDER BY
+            t.deadline ASC
+        `
+
+        //截止时间是今天的bug
+        const todoBug = await dbQuery(todoBugSql) 
+
+
         const usersList = emails.map(item=> ({
             realname: item.realname,
             account: item.account,
-            // email: item.email,
-            // members: config.daily.leaders[realname],
             task: [],
-            bug: []
+            bug: [],
+            todoTask: [],
+            todoBug: []
         }))
 
         tasks.forEach(resItem=> {
             let  existItem = usersList.find(p => p.realname === resItem.realname)
-            existItem.task.push(resItem)
+            existItem?.task?.push(resItem)
         })
 
         bugs.forEach(resItem=> {
             const  existItem = usersList.find(p => p.realname === resItem.realname)
-            existItem.bug.push(resItem)
+            existItem?.bug?.push(resItem)
+        })
+
+        todoTask.forEach(resItem => {
+            let  existItem = usersList.find(p => p.realname === resItem.realname)
+            existItem?.todoTask?.push(resItem)
+        })
+        todoBug.forEach(resItem => {
+            let  existItem = usersList.find(p => p.realname === resItem.realname)
+            existItem?.todoBug?.push(resItem)
         })
 
         const adminUsers = config.daily.redirectEmails

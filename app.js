@@ -23,7 +23,7 @@ app.set('view engine', 'jade');
 
 //日报，按人统计
 dayScheduler(config.daily.hour,config.daily.prev,(s,e)=> {
-  dailyTask(config.daily.users,s,e)
+  dailyTask(config.daily.users,'2021-07-07 00:00:00','2021-07-09 00:00:00')
 })
 
 
