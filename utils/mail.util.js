@@ -21,7 +21,7 @@ const sendMail = (content,users) => {
 
     transporter.sendMail({
         from: config.email.username,
-        to: 'jiangmingwen@huanbo99.com',//users.join(','),
+        to: users.join(','),
         subject: 'Zentao Daily「' + moment().format('YYYY-MM-DD')+'」',
         html: content
     },(error,info)=> {
